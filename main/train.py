@@ -1,14 +1,16 @@
 import argparse
 import json
+import joblib
 import os
 import optuna
-
-optuna.logging.disable_default_handler()
 import sys
 import torch
 import random
 import pickle
 import torch.nn as nn
+
+optuna.logging.disable_default_handler()
+torch.manual_seed(0)
 
 from distutils.util import strtobool
 from sklearn.model_selection import train_test_split
@@ -18,7 +20,7 @@ sys.path.append("../models/")
 from model import CustomDensenet
 
 
-sys.path.append("../learners/")
+sys.path.append("../learner/")
 from trainer import SelfTrainer
 
 sys.path.append("../utils/")
@@ -36,6 +38,8 @@ def objective(trial):
         if not os.path.isdir(tf_dir):
             os.makedirs(tf_dir)
         tblogger = SummaryWriter(tf_dir)
+    else:
+        tblogger = None
 
     # Load Dataset
     dataloaders_dict = get_dataloader(args.input, args.batchsize)
@@ -53,7 +57,7 @@ def objective(trial):
     criterion = nn.CrossEntropyLoss()
 
     flooding_level = float(
-        trial.suggest_discrete_uniform("flooding_level", 0.00, 0.20, 0.01)
+        trial.suggest_discrete_uniform("flooding_level", 0.00, 0.20, 0.02)
     )
 
     trainer = SelfTrainer(
@@ -67,8 +71,9 @@ def objective(trial):
         flooding=flooding_level,
     )
 
-    ES = EarlyStopping(patience=20, verbose=1)
+    ES = EarlyStopping(patience=15, verbose=1)
 
+    best = 100
     for epoch in range(args.epoch):
         print(f"Epoch {epoch}")
         for phase in ["train", "test"]:
@@ -79,19 +84,25 @@ def objective(trial):
             elif phase == "test":
                 loss, acc, error_rate = trainer.eval(phase, epoch)
 
+        if error_rate < best:
+            best = error_rate
+            best_ep = epoch + 1
+
         if ES.validate(loss):
             print("end loop")
             break
 
-    return error_rate
+    return best
 
 
 def main(args):
     study = optuna.create_study()
     study.optimize(objective, n_trials=args.trial_size)
 
-    with open(os.path.join(args.output, "best_param.json"), "w") as f:
-        json.dump(study.best_params, f, indent=4)
+    # with open(os.path.join(args.output, "best_param.json"), "w") as f:
+    #     json.dump(study.best_params, f, indent=4)
+
+    joblib.dump(study, os.path.join(args.output, "study.pkl"))
 
 
 if __name__ == "__main__":
@@ -106,6 +117,7 @@ if __name__ == "__main__":
     parser.add_argument("--gpuid", type=str, default="0")
     parser.add_argument("--n_cls", type=int, default=3)
     parser.add_argument("--transfer", type=strtobool, default=False)
+    parser.add_argument("--tfboard", type=strtobool)
 
     args = parser.parse_args()
 
