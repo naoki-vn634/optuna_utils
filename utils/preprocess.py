@@ -12,7 +12,7 @@ class ImageTransform(object):
             "train": transforms.Compose(
                 [
                     transforms.ToTensor(),
-                    transforms.RandomHorizontalFlip(p=0.5)
+                    transforms.RandomHorizontalFlip(p=0.5),
                     transforms.Normalize(mean, std),
                 ]
             ),
@@ -57,4 +57,3 @@ class PatientDataset(object):
         img_transformed = self.transform(img, self.phase)
 
         return img_transformed, int(self.label_list[index])
-
