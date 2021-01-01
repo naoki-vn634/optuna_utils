@@ -1,10 +1,12 @@
 import json
+import os
 import sys
 import torch
 import torch.optim as optim
 
 sys.path.append("../preprocess/")
 from preprocess import ImageTransform, PatientDataset
+
 
 class EarlyStopping:
     def __init__(self, patience=0, verbose=0):
@@ -28,19 +30,27 @@ class EarlyStopping:
 
 
 def get_optimizer(trial, model):
-    optimizer_names = ['Adam', 'SGD']
-    optimizer_name = trial.suggest_categorical('optimizer', optimizer_names)
-    weight_decay = trial.suggest_loguniform('weight_decay', 1e-10, 1e-3)
+    optimizer_names = ["Adam", "SGD"]
+    optimizer_name = trial.suggest_categorical("optimizer", optimizer_names)
+    weight_decay = trial.suggest_loguniform("weight_decay", 1e-10, 1e-3)
 
-    if optimizer_name == optimizer_names[0]: 
-    adam_lr = trial.suggest_loguniform('adam_lr', 1e-5, 1e-1)
-    optimizer = optim.Adam(model.parameters(), lr=adam_lr, weight_decay=weight_decay)
+    if optimizer_name == optimizer_names[0]:
+        adam_lr = trial.suggest_loguniform("adam_lr", 1e-4, 1e-3)
+        optimizer = optim.Adam(
+            model.parameters(), lr=adam_lr, weight_decay=weight_decay
+        )
 
     elif optimizer_name == optimizer_names[1]:
-    momentum_sgd_lr = trial.suggest_loguniform('momentum_sgd_lr', 1e-5, 1e-1)
-    optimizer = optim.SGD(model.parameters(), lr=momentum_sgd_lr, momentum=0.9, weight_decay=weight_decay)
+        momentum_sgd_lr = trial.suggest_loguniform("momentum_sgd_lr", 1e-4, 1e-3)
+        optimizer = optim.SGD(
+            model.parameters(),
+            lr=momentum_sgd_lr,
+            momentum=0.9,
+            weight_decay=weight_decay,
+        )
 
     return optimizer
+
 
 def get_dataloader(input, batchsize):
     mean = (0.485, 0.456, 0.406)
@@ -65,7 +75,6 @@ def get_dataloader(input, batchsize):
     print("|-- No : ", y_test.count(0))
     print("|-- Garbage: ", y_test.count(2))
 
-
     train_dataset = PatientDataset(
         x_train, y_train, transform=transforms, phase="train", color=False
     )
@@ -85,4 +94,3 @@ def get_dataloader(input, batchsize):
 
     dataloaders_dict = {"train": train_dataloader, "test": test_dataloader}
     return dataloaders_dict
-
