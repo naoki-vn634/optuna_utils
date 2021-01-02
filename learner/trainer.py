@@ -55,8 +55,9 @@ class SelfTrainer(nn.Module):
         epoch_acc = epoch_correct.double() / len(self.dataloaders_dict[phase].dataset)
         print("{} Loss:{:.4f} Acc:{:.4f}".format(phase, epoch_loss, epoch_acc))
 
-        self.tblogger.add_scalar("{}/Loss".format(phase), epoch_loss, epoch)
-        self.tblogger.add_scalar("{}/Acc".format(phase), epoch_acc, epoch)
+        if self.tblogger is not None:
+            self.tblogger.add_scalar("{}/Loss".format(phase), epoch_loss, epoch)
+            self.tblogger.add_scalar("{}/Acc".format(phase), epoch_acc, epoch)
 
         return epoch_loss, epoch_acc
 
@@ -82,7 +83,8 @@ class SelfTrainer(nn.Module):
 
         print("{} Loss:{:.4f} Acc:{:.4f}".format(phase, epoch_loss, epoch_acc))
 
-        self.tblogger.add_scalar("{}/Loss".format(phase), epoch_loss, epoch)
-        self.tblogger.add_scalar("{}/Acc".format(phase), epoch_acc, epoch)
+        if self.tblogger is not None:
+            self.tblogger.add_scalar("{}/Loss".format(phase), epoch_loss, epoch)
+            self.tblogger.add_scalar("{}/Acc".format(phase), epoch_acc, epoch)
 
         return epoch_loss, epoch_acc, 1 - epoch_acc
