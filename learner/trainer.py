@@ -46,10 +46,10 @@ class SelfTrainer(nn.Module):
             if self.flooding > 0:
                 loss = (loss - self.flooding).abs() + self.flooding
             loss.backward()
-            self.optimizer.step()
 
             epoch_loss += float(loss.item()) * images.size(0)
             epoch_correct += torch.sum(preds == labels.data)
+            self.optimizer.step()
 
         epoch_loss = epoch_loss / len(self.dataloaders_dict[phase].dataset)
         epoch_acc = epoch_correct.double() / len(self.dataloaders_dict[phase].dataset)
